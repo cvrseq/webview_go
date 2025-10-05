@@ -3,6 +3,7 @@ package webview
 /*
 #cgo CFLAGS: -I${SRCDIR}/libs/webview/include
 #cgo CXXFLAGS: -I${SRCDIR}/libs/webview/include -DWEBVIEW_STATIC
+#cgo darwin LDFLAGS: -framework WebKit -ldl -L${SRCDIR}/../webview/core -lwebview
 
 #cgo linux openbsd freebsd netbsd CXXFLAGS: -DWEBVIEW_GTK -std=c++11
 #cgo linux openbsd freebsd netbsd LDFLAGS: -ldl
@@ -15,20 +16,18 @@ package webview
 #cgo windows LDFLAGS: -static -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion
 
 #include "webview.h"
-
 #include <stdlib.h>
 #include <stdint.h>
 
 void CgoWebViewDispatch(webview_t w, uintptr_t arg);
 void CgoWebViewBind(webview_t w, const char *name, uintptr_t index);
 void CgoWebViewUnbind(webview_t w, const char *name);
+
+WEBVIEW_API webview_version_t webview_set_user_agent(webview_t w, const char *ua);
 */
 import "C"
+
 import (
-	_ "github.com/webview/webview_go/libs/mswebview2"
-	_ "github.com/webview/webview_go/libs/mswebview2/include"
-	_ "github.com/webview/webview_go/libs/webview"
-	_ "github.com/webview/webview_go/libs/webview/include"
 	"encoding/json"
 	"errors"
 	"reflect"
@@ -88,6 +87,8 @@ type WebView interface {
 
 	// SetSize updates native window size. See Hint constants.
 	SetSize(w int, h int, hint Hint)
+
+	SetUserAgent(ua string)
 
 	// Navigate navigates webview to the given URL. URL may be a properly encoded data.
 	// URI. Examples:
@@ -190,6 +191,13 @@ func (w *webview) SetTitle(title string) {
 	s := C.CString(title)
 	defer C.free(unsafe.Pointer(s))
 	C.webview_set_title(w.w, s)
+}
+
+// SetUserAgent sets a custom user agent string for the webview.
+func (w *webview) SetUserAgent(ua string) {
+	cua := C.CString(ua)
+	defer C.free(unsafe.Pointer(cua))
+	C.webview_set_user_agent(w.w, cua)
 }
 
 func (w *webview) SetSize(width int, height int, hint Hint) {
